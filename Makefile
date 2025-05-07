@@ -192,3 +192,8 @@ update-all-go-deps:
 		$(GO) get -d $$m; \
 	done
 	@cd ./documentation/examples/remote_storage/ && $(GO) mod tidy
+
+.PHONY: migrate-test
+migrate-test:
+	@echo ">> migrating test files"
+	@go run ./promql/cmd/migrate/main.go --mode=strict
