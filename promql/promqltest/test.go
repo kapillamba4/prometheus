@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"io/fs"
 	"math"
-	"os"
-	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -1652,108 +1650,4 @@ func timeMilliseconds(t time.Time) int64 {
 
 func durationMilliseconds(d time.Duration) int64 {
 	return int64(d / (time.Millisecond / time.Nanosecond))
-}
-
-func MigrateTestData(mode string) error {
-	const dir = "promql/promqltest/testdata"
-
-	files, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("failed to read testdata directory: %w", err)
-	}
-
-	strictAnnotations := map[string][]string{
-		"eval_fail":    {"  expect fail", "  expect no_warn", "  expect no_info"},
-		"eval_warn":    {"  expect no_fail", "  expect warn", "  expect no_info"},
-		"eval_info":    {"  expect info", "  expect no_warn", "  expect no_info"},
-		"eval_ordered": {"  expect ordered", "  expect no_fail", "  expect no_warn", "  expect no_info"},
-		"eval":         {"  expect no_fail", "  expect no_warn", "  expect no_info"},
-	}
-
-	basicAnnotations := map[string][]string{
-		"eval_fail":    {"  expect fail"},
-		"eval_warn":    {"  expect warn"},
-		"eval_info":    {"  expect info"},
-		"eval_ordered": {"  expect ordered"},
-	}
-
-	annotationMap := strictAnnotations
-	if mode == "basic" {
-		annotationMap = basicAnnotations
-	}
-
-	evalRegex := regexp.MustCompile(`^(eval |eval_fail |eval_warn |eval_info |eval_ordered )(.*)$`)
-
-	for _, file := range files {
-		if file.IsDir() || !strings.HasSuffix(file.Name(), ".test") {
-			continue
-		}
-
-		path := filepath.Join(dir, file.Name())
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("failed to read file %s: %w", path, err)
-		}
-
-		lines := strings.Split(string(content), "\n")
-		processedLines, err := processTestFileLines(lines, annotationMap, evalRegex)
-		if err != nil {
-			return fmt.Errorf("error processing file %s: %w", path, err)
-		}
-
-		if err := os.WriteFile(path, []byte(strings.Join(processedLines, "\n")), 0o644); err != nil {
-			return fmt.Errorf("failed to write file %s: %w", path, err)
-		}
-	}
-	return nil
-}
-
-func processTestFileLines(
-	lines []string,
-	annotationMap map[string][]string,
-	evalRegex *regexp.Regexp,
-) (result []string, err error) {
-	for i := 0; i < len(lines); i++ {
-		matches := evalRegex.FindStringSubmatch(strings.TrimSpace(lines[i]))
-		if matches == nil {
-			result = append(result, lines[i])
-			continue
-		}
-
-		command := matches[1]
-		expression := matches[2]
-		result = append(result, fmt.Sprintf("eval %s", expression))
-
-		if annotations, found := annotationMap[command]; found {
-			result = append(result, annotations...)
-		}
-
-		isFailCmd := strings.Contains(command, "expect fail")
-		foundFailMessage := false
-		foundFailRegex := false
-		for i+1 < len(lines) && !evalRegex.MatchString(strings.TrimSpace(lines[i+1])) {
-			i++
-			line := strings.TrimSpace(lines[i])
-			switch {
-			case strings.HasPrefix(line, "expected_fail_message"):
-				msg := strings.TrimPrefix(line, "expected_fail_message ")
-				result = append(result, fmt.Sprintf("  expect fail msg:%s", msg))
-				foundFailMessage = true
-
-			case strings.HasPrefix(line, "expected_fail_regexp"):
-				regex := strings.TrimPrefix(line, "expected_fail_regexp ")
-				result = append(result, fmt.Sprintf("  expect fail regex:%s", regex))
-				foundFailRegex = true
-
-			default:
-				result = append(result, lines[i])
-			}
-		}
-
-		if !foundFailMessage && !foundFailRegex && isFailCmd {
-			result = append(result, "  expect fail")
-		}
-	}
-
-	return result, nil
 }
