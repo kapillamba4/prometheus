@@ -14,48 +14,68 @@ load 5m
 
 # Simple sum.
 eval instant at 50m SUM BY (group) (http_requests{job="api-server"})
+  expect no_warn
+  expect no_info
   {group="canary"} 700
   {group="production"} 300
 
 eval instant at 50m SUM BY (group) (((http_requests{job="api-server"})))
+  expect no_warn
+  expect no_info
   {group="canary"} 700
   {group="production"} 300
 
 # Test alternative "by"-clause order.
 eval instant at 50m sum by (group) (http_requests{job="api-server"})
+  expect no_warn
+  expect no_info
   {group="canary"} 700
   {group="production"} 300
 
 # Simple average.
 eval instant at 50m avg by (group) (http_requests{job="api-server"})
+  expect no_warn
+  expect no_info
   {group="canary"} 350
   {group="production"} 150
 
 # Simple count.
 eval instant at 50m count by (group) (http_requests{job="api-server"})
+  expect no_warn
+  expect no_info
   {group="canary"} 2
   {group="production"} 2
 
 # Simple without.
 eval instant at 50m sum without (instance) (http_requests{job="api-server"})
+  expect no_warn
+  expect no_info
   {group="canary",job="api-server"} 700
   {group="production",job="api-server"} 300
 
 # Empty by.
 eval instant at 50m sum by () (http_requests{job="api-server"})
+  expect no_warn
+  expect no_info
   {} 1000
 
 # No by/without.
 eval instant at 50m sum(http_requests{job="api-server"})
+  expect no_warn
+  expect no_info
   {} 1000
 
 # Empty without.
 eval instant at 50m sum without () (http_requests{job="api-server",group="production"})
+  expect no_warn
+  expect no_info
   {group="production",job="api-server",instance="0"} 100
   {group="production",job="api-server",instance="1"} 200
 
 # Without with mismatched and missing labels. Do not do this.
 eval instant at 50m sum without (instance) (http_requests{job="api-server"} or foo)
+  expect no_warn
+  expect no_info
   {group="canary",job="api-server"} 700
   {group="production",job="api-server"} 300
   {region="europe",job="api-server"} 900
@@ -63,11 +83,15 @@ eval instant at 50m sum without (instance) (http_requests{job="api-server"} or f
 
 # Lower-cased aggregation operators should work too.
 eval instant at 50m sum(http_requests) by (job) + min(http_requests) by (job) + max(http_requests) by (job) + avg(http_requests) by (job)
+  expect no_warn
+  expect no_info
   {job="app-server"} 4550
   {job="api-server"} 1750
 
 # Test alternative "by"-clause order.
 eval instant at 50m sum by (group) (http_requests{job="api-server"})
+  expect no_warn
+  expect no_info
   {group="canary"} 700
   {group="production"} 300
 
@@ -75,123 +99,181 @@ eval instant at 50m sum by (group) (http_requests{job="api-server"})
 # Public health warning: stick to one form within an expression (or even
 # in an organization), or risk serious user confusion.
 eval instant at 50m sum(sum by (group) (http_requests{job="api-server"})) by (job)
+  expect no_warn
+  expect no_info
   {} 1000
 
 eval instant at 50m SUM(http_requests)
+	expect no_warn
+	expect no_info
 	{} 3600
 
 eval instant at 50m SUM(http_requests{instance="0"}) BY(job)
+	expect no_warn
+	expect no_info
 	{job="api-server"} 400
 	{job="app-server"} 1200
 
 eval instant at 50m SUM(http_requests) BY (job)
+	expect no_warn
+	expect no_info
 	{job="api-server"} 1000
 	{job="app-server"} 2600
 
 # Non-existent labels mentioned in BY-clauses shouldn't propagate to output.
 eval instant at 50m SUM(http_requests) BY (job, nonexistent)
+	expect no_warn
+	expect no_info
 	{job="api-server"} 1000
 	{job="app-server"} 2600
 
 eval instant at 50m COUNT(http_requests) BY (job)
+	expect no_warn
+	expect no_info
 	{job="api-server"} 4
 	{job="app-server"} 4
 
 eval instant at 50m SUM(http_requests) BY (job, group)
+	expect no_warn
+	expect no_info
 	{group="canary", job="api-server"} 700
 	{group="canary", job="app-server"} 1500
 	{group="production", job="api-server"} 300
 	{group="production", job="app-server"} 1100
 
 eval instant at 50m AVG(http_requests) BY (job)
+	expect no_warn
+	expect no_info
 	{job="api-server"} 250
 	{job="app-server"} 650
 
 eval instant at 50m MIN(http_requests) BY (job)
+	expect no_warn
+	expect no_info
 	{job="api-server"} 100
 	{job="app-server"} 500
 
 eval instant at 50m MAX(http_requests) BY (job)
+	expect no_warn
+	expect no_info
 	{job="api-server"} 400
 	{job="app-server"} 800
 
 eval instant at 50m abs(-1 * http_requests{group="production",job="api-server"})
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 100
 	{group="production", instance="1", job="api-server"} 200
 
 eval instant at 50m floor(0.004 * http_requests{group="production",job="api-server"})
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 0
 	{group="production", instance="1", job="api-server"} 0
 
 eval instant at 50m ceil(0.004 * http_requests{group="production",job="api-server"})
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 1
 	{group="production", instance="1", job="api-server"} 1
 
 eval instant at 50m round(0.004 * http_requests{group="production",job="api-server"})
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 0
 	{group="production", instance="1", job="api-server"} 1
 
 # Round should correctly handle negative numbers.
 eval instant at 50m round(-1 * (0.004 * http_requests{group="production",job="api-server"}))
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 0
 	{group="production", instance="1", job="api-server"} -1
 
 # Round should round half up.
 eval instant at 50m round(0.005 * http_requests{group="production",job="api-server"})
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 1
 	{group="production", instance="1", job="api-server"} 1
 
 eval instant at 50m round(-1 * (0.005 * http_requests{group="production",job="api-server"}))
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 0
 	{group="production", instance="1", job="api-server"} -1
 
 eval instant at 50m round(1 + 0.005 * http_requests{group="production",job="api-server"})
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 2
 	{group="production", instance="1", job="api-server"} 2
 
 eval instant at 50m round(-1 * (1 + 0.005 * http_requests{group="production",job="api-server"}))
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} -1
 	{group="production", instance="1", job="api-server"} -2
 
 # Round should accept the number to round nearest to.
 eval instant at 50m round(0.0005 * http_requests{group="production",job="api-server"}, 0.1)
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 0.1
 	{group="production", instance="1", job="api-server"} 0.1
 
 eval instant at 50m round(2.1 + 0.0005 * http_requests{group="production",job="api-server"}, 0.1)
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 2.2
 	{group="production", instance="1", job="api-server"} 2.2
 
 eval instant at 50m round(5.2 + 0.0005 * http_requests{group="production",job="api-server"}, 0.1)
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 5.3
 	{group="production", instance="1", job="api-server"} 5.3
 
 # Round should work correctly with negative numbers and multiple decimal places.
 eval instant at 50m round(-1 * (5.2 + 0.0005 * http_requests{group="production",job="api-server"}), 0.1)
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} -5.2
 	{group="production", instance="1", job="api-server"} -5.3
 
 # Round should work correctly with big toNearests.
 eval instant at 50m round(0.025 * http_requests{group="production",job="api-server"}, 5)
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 5
 	{group="production", instance="1", job="api-server"} 5
 
 eval instant at 50m round(0.045 * http_requests{group="production",job="api-server"}, 5)
+	expect no_warn
+	expect no_info
 	{group="production", instance="0", job="api-server"} 5
 	{group="production", instance="1", job="api-server"} 10
 
 # Standard deviation and variance.
 eval instant at 50m stddev(http_requests)
+  expect no_warn
+  expect no_info
   {} 229.12878474779
 
 eval instant at 50m stddev by (instance)(http_requests)
+  expect no_warn
+  expect no_info
   {instance="0"} 223.60679774998
   {instance="1"} 223.60679774998
 
 eval instant at 50m stdvar(http_requests)
+  expect no_warn
+  expect no_info
   {} 52500
 
 eval instant at 50m stdvar by (instance)(http_requests)
+  expect no_warn
+  expect no_info
   {instance="0"} 50000
   {instance="1"} 50000
 
@@ -203,9 +285,13 @@ load 5m
   http_requests{job="api-server", instance="0", group="canary"} 0+1.33x10
 
 eval instant at 50m stddev(http_requests)
+  expect no_warn
+  expect no_info
   {} 0.0
 
 eval instant at 50m stdvar(http_requests)
+  expect no_warn
+  expect no_info
   {} 0.0
 
 
@@ -216,6 +302,8 @@ load 5m
   label_grouping_test{a="a", b="abb"} 0+20x10
 
 eval instant at 50m sum(label_grouping_test) by (a, b)
+  expect no_warn
+  expect no_info
   {a="a", b="abb"} 200
   {a="aa", b="bb"} 100
 
@@ -232,6 +320,8 @@ load 5m
   http_requests_histogram{job="api-server", instance="3", group="canary"} {{schema:2 count:4 sum:10 buckets:[1 0 0 0 1 0 0 1 1]}}
 
 eval instant at 0m max(http_requests)
+  expect no_warn
+  expect no_info
   {} 4
 
 # The histogram is ignored here so the result doesn't change but it has an info annotation now.
@@ -244,6 +334,8 @@ eval instant at 0m max(http_requests_histogram)
   expect info
 
 eval instant at 0m min(http_requests)
+  expect no_warn
+  expect no_info
   {} 1
 
 # The histogram is ignored here so the result doesn't change but it has an info annotation now.
@@ -256,10 +348,14 @@ eval instant at 0m min(http_requests_histogram)
   expect info
 
 eval instant at 0m max by (group) (http_requests)
+  expect no_warn
+  expect no_info
   {group="production"} 2
   {group="canary"} 4
 
 eval instant at 0m min by (group) (http_requests)
+  expect no_warn
+  expect no_info
   {group="production"} 1
   {group="canary"} 3
 
@@ -309,10 +405,14 @@ eval instant at 50m bottomk(5, http_requests{group="canary",job="app-server"})
 	http_requests{group="canary", instance="1", job="app-server"} 800
 
 eval instant at 50m topk by (group) (1, http_requests)
+  expect no_warn
+  expect no_info
   http_requests{group="production", instance="1", job="app-server"} 600
   http_requests{group="canary", instance="1", job="app-server"} 800
 
 eval instant at 50m bottomk by (group) (2, http_requests)
+  expect no_warn
+  expect no_info
   http_requests{group="canary", instance="0", job="api-server"} 300
   http_requests{group="canary", instance="1", job="api-server"} 400
   http_requests{group="production", instance="0", job="api-server"} 100
@@ -425,18 +525,24 @@ load 5m
 	version{job="app-server", instance="3", group="canary"}		{{schema:0 sum:10 count:20 z_bucket_w:0.001 z_bucket:2 buckets:[1 2] n_buckets:[1 2]}}
 
 eval instant at 1m count_values("version", version)
+	expect no_warn
+	expect no_info
 	{version="6"} 5
 	{version="7"} 2
 	{version="8"} 2
     {version="{count:20, sum:10, [-2,-1):2, [-1,-0.5):1, [-0.001,0.001]:2, (0.5,1]:1, (1,2]:2}"} 2
 
 eval instant at 1m count_values(((("version"))), version)
+    expect no_warn
+    expect no_info
     {version="6"} 5
     {version="7"} 2
     {version="8"} 2
     {version="{count:20, sum:10, [-2,-1):2, [-1,-0.5):1, [-0.001,0.001]:2, (0.5,1]:1, (1,2]:2}"} 2
 
 eval instant at 1m count_values without (instance)("version", version)
+	expect no_warn
+	expect no_info
 	{job="api-server", group="production", version="6"} 3
 	{job="api-server", group="canary", version="8"} 2
 	{job="app-server", group="production", version="6"} 2
@@ -445,6 +551,8 @@ eval instant at 1m count_values without (instance)("version", version)
 
 # Overwrite label with output. Don't do this.
 eval instant at 1m count_values without (instance)("job", version)
+	expect no_warn
+	expect no_info
 	{job="6", group="production"} 5
 	{job="8", group="canary"} 2
 	{job="7", group="canary"} 2
@@ -452,6 +560,8 @@ eval instant at 1m count_values without (instance)("job", version)
 
 # Overwrite label with output. Don't do this.
 eval instant at 1m count_values by (job, group)("job", version)
+	expect no_warn
+	expect no_info
 	{job="6", group="production"} 5
 	{job="8", group="canary"} 2
 	{job="7", group="canary"} 2
@@ -477,6 +587,8 @@ load 10s
 	foo .8
 
 eval instant at 1m quantile without(point)(0.8, data)
+	expect no_warn
+	expect no_info
 	{test="two samples"} 0.8
 	{test="three samples"} 1.6
 	{test="uneven samples"} 2.8
@@ -494,12 +606,16 @@ eval instant at 1m quantile(0.8, data_histogram)
 
 # Bug #5276.
 eval instant at 1m quantile without(point)(scalar(foo), data)
+	expect no_warn
+	expect no_info
 	{test="two samples"} 0.8
 	{test="three samples"} 1.6
 	{test="uneven samples"} 2.8
 
 
 eval instant at 1m quantile without(point)((scalar(foo)), data)
+	expect no_warn
+	expect no_info
 	{test="two samples"} 0.8
 	{test="three samples"} 1.6
 	{test="uneven samples"} 2.8
@@ -526,12 +642,16 @@ load 10s
 	foo .8
 
 eval instant at 1m group without(point)(data)
+	expect no_warn
+	expect no_info
 	{test="two samples"} 1
 	{test="three samples"} 1
 	{test="uneven samples"} 1
     {test="histogram sample"} 1
 
 eval instant at 1m group(foo)
+	expect no_warn
+	expect no_info
 	{} 1
 
 # Tests for avg.
@@ -580,40 +700,64 @@ load 10s
 	data{test="value is nan"} NaN
 
 eval instant at 1m avg(data{test="ten"})
+	expect no_warn
+	expect no_info
 	{} 10
 
 eval instant at 1m avg(data{test="inf"})
+	expect no_warn
+	expect no_info
 	{} Inf
 
 eval instant at 1m avg(data{test="inf2"})
+	expect no_warn
+	expect no_info
 	{} Inf
 
 eval instant at 1m avg(data{test="inf3"})
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 1m avg(data{test="-inf"})
+	expect no_warn
+	expect no_info
 	{} -Inf
 
 eval instant at 1m avg(data{test="-inf2"})
+	expect no_warn
+	expect no_info
 	{} -Inf
 
 eval instant at 1m avg(data{test="-inf3"})
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 1m avg(data{test="nan"})
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 1m avg(data{test="big"})
+	expect no_warn
+	expect no_info
 	{} 9.988465674311579e+307
 
 eval instant at 1m avg(data{test="-big"})
+	expect no_warn
+	expect no_info
 	{} -9.988465674311579e+307
 
 eval instant at 1m avg(data{test="bigzero"})
+	expect no_warn
+	expect no_info
 	{} 0
 
 # If NaN is in the mix, the result is NaN.
 eval instant at 1m avg(data)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 # Test summing and averaging extreme values.
@@ -640,38 +784,58 @@ load 10s
 	data{test="nan",group="2",point="b"} NaN
 
 eval instant at 1m sum(data{test="ten"})
+	expect no_warn
+	expect no_info
 	{} 10
 
 eval instant at 1m avg(data{test="ten"})
+	expect no_warn
+	expect no_info
 	{} 2.5
 
 eval instant at 1m sum by (group) (data{test="pos_inf"})
+	expect no_warn
+	expect no_info
 	{group="1"} Inf
 	{group="2"} Inf
 
 eval instant at 1m avg by (group) (data{test="pos_inf"})
+	expect no_warn
+	expect no_info
 	{group="1"} Inf
 	{group="2"} Inf
 
 eval instant at 1m sum by (group) (data{test="neg_inf"})
+	expect no_warn
+	expect no_info
 	{group="1"} -Inf
 	{group="2"} -Inf
 
 eval instant at 1m avg by (group) (data{test="neg_inf"})
+	expect no_warn
+	expect no_info
 	{group="1"} -Inf
 	{group="2"} -Inf
 
 eval instant at 1m sum(data{test="inf_inf"})
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 1m avg(data{test="inf_inf"})
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 1m sum by (group) (data{test="nan"})
+	expect no_warn
+	expect no_info
 	{group="1"} NaN
 	{group="2"} NaN
 
 eval instant at 1m avg by (group) (data{test="nan"})
+	expect no_warn
+	expect no_info
 	{group="1"} NaN
 	{group="2"} NaN
 
@@ -753,17 +917,25 @@ load 5m
 	series{label="c"} NaN
 
 eval instant at 0m stddev(series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stdvar(series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stddev by (label) (series)
+	expect no_warn
+	expect no_info
 	{label="a"} 0
 	{label="b"} 0
 	{label="c"} NaN
 
 eval instant at 0m stdvar by (label) (series)
+	expect no_warn
+	expect no_info
 	{label="a"} 0
 	{label="b"} 0
 	{label="c"} NaN
@@ -776,17 +948,25 @@ load 5m
 	series{label="c"} 2
 
 eval instant at 0m stddev(series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stdvar(series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stddev by (label) (series)
+	expect no_warn
+	expect no_info
 	{label="a"} NaN
 	{label="b"} 0
 	{label="c"} 0
 
 eval instant at 0m stdvar by (label) (series)
+	expect no_warn
+	expect no_info
 	{label="a"} NaN
 	{label="b"} 0
 	{label="c"} 0
@@ -797,9 +977,13 @@ load 5m
 	series NaN
 
 eval instant at 0m stddev(series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stdvar(series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 clear
@@ -810,17 +994,25 @@ load 5m
 	series{label="c"} inf
 
 eval instant at 0m stddev (series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stdvar (series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stddev by (label) (series)
+	expect no_warn
+	expect no_info
 	{label="a"} 0
 	{label="b"} 0
 	{label="c"} NaN
 
 eval instant at 0m stdvar by (label) (series)
+	expect no_warn
+	expect no_info
 	{label="a"} 0
 	{label="b"} 0
 	{label="c"} NaN
@@ -833,17 +1025,25 @@ load 5m
 	series{label="c"} 2
 
 eval instant at 0m stddev(series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stdvar(series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stddev by (label) (series)
+	expect no_warn
+	expect no_info
 	{label="a"} NaN
 	{label="b"} 0
 	{label="c"} 0
 
 eval instant at 0m stdvar by (label) (series)
+	expect no_warn
+	expect no_info
 	{label="a"} NaN
 	{label="b"} 0
 	{label="c"} 0
@@ -854,7 +1054,11 @@ load 5m
 	series inf
 
 eval instant at 0m stddev(series)
+	expect no_warn
+	expect no_info
 	{} NaN
 
 eval instant at 0m stdvar(series)
+	expect no_warn
+	expect no_info
 	{} NaN
